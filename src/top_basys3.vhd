@@ -26,6 +26,14 @@ architecture top_basys3_arch of top_basys3 is
 
     -- signal declarations
     
+    signal clock_reset : std_logic; 
+    signal fsm_reset : std_logic; 
+    
+    signal slow_clock: std_logic; 
+    signal w_floor1: std_logic_vector(3 downto 0); 
+    
+    signal seg_houser: std_logic_vector(6 downto 0); 
+    
   
 	-- component declarations
     component sevenseg_decoder is
@@ -70,14 +78,61 @@ architecture top_basys3_arch of top_basys3 is
 	
 begin
 	-- PORT MAPS ----------------------------------------
-    	
 	
+	elevator_controller_fsm_inst : elevator_controller_fsm
+		port map (
+            i_clk => slow_clock,     
+            i_reset => clock_reset, 
+            is_stopped => sw(0),
+            go_up_down => sw(1),
+            o_floor => w_floor1 
+		 );
+		 
+	clkdiv_inst : clock_divider 		--instantiation of clock_divider to take 
+        generic map ( k_DIV => 12500000 ) -- 4 Hz clock from 100 MHz
+        port map (						  
+            i_clk   => clk,
+            i_reset => clock_reset,
+            o_clk   => slow_clock
+        ); 
+        
+    sevenseg_decoder_inst : sevenseg_decoder
+        port map (
+            i_Hex => w_floor1,
+            o_seg_n => seg_houser
+        );
+    
+  
 	-- CONCURRENT STATEMENTS ----------------------------
 	
+	seg <= seg_houser; 
+		
+    an(0)   <= '0';
+    an(1)   <= '1';
+    an(2)   <= '1';
+    an(3)   <= '1';
+	
+
 	-- LED 15 gets the FSM slow clock signal. The rest are grounded.
 	
-	-- leave unused switches UNCONNECTED. Ignore any warnings this causes.
+	led <= slow_clock & (14 downto 0 => '0'); 
 	
+	-- leave unused switches UNCONNECTED. Ignore any warnings this causes.
+
 	-- reset signals
 	
+	clock_reset <= btnU or btnL;
+	fsm_reset <= btnU or btnR; 
+	
 end top_basys3_arch;
+
+
+-- 
+--    tdm_inst : TDM4
+--        generic map (k_width => 4)
+--        port map(
+--            i_reset => 
+--            i_D3 => 
+        
+        
+--        );
